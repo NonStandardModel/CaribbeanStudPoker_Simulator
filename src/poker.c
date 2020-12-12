@@ -16,8 +16,9 @@ int rank_hand(Card hand[], int values[]) {
 	int suites[5];
 	for (int i = 0; i < HAND_NUM_CARDS-1; i++) {
 		if (values[i+1] != values[i]) {distinct_vals++;}
-		suites[i] = hand[i].suite;
+		suites[i] = hand[i].suite; // suites for cards 1-4 are copied into array here .. the 5th card is done after
 	}
+	suites[4] = hand[4].suite; // the missing 5th card suite from above
 	sort(suites, 5);
 	for (int i = 0; i < HAND_NUM_CARDS-1; i++) {
 		if (suites[i+1] != suites[i]) {distinct_suit++;}

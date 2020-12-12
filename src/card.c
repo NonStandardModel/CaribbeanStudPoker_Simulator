@@ -15,9 +15,8 @@ void initialize(Card deck[]) {
 	}
 }
 
-// TODO .. there is <0.5% error from expected RTP to what this simulator returns
-// make sure that the shuffling is OK !! Maybe run statistical tests. 
-// On the other hand .. all we need is to select 10 random unique cards from deck.
+// TODO .. 
+// All we need is to select 10 random unique cards from deck.
 // Maybe unique random selection could be faster than shuffling entire deck ???
 void shuffle(Card deck[]) {
 	int swp = 0; //index of card to be swapped
