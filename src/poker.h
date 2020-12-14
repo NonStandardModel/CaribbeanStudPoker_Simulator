@@ -32,8 +32,8 @@ char resolve_tie(int rank, int pvals[], int bvals[]);
 
 unsigned int get_win(unsigned int bet, int player_rank, int bank_rank, int player_values[], int bank_values[]);
 
-bool decide_if_raise(int player_rank, int player_values[], int bank_visible_card);
+bool decide_if_raise(int player_rank, int player_values[], int bank_visible_card, char strat);
 
-GameResult play(Card deck[], unsigned int bet);
+GameResult play(Card deck[], unsigned int bet, char strat);
 
 #endif

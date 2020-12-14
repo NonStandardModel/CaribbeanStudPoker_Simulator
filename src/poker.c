@@ -6,6 +6,8 @@
 #include "card.h"
 #include "poker.h"
 
+#define DEBUG 0
+
 int rank_hand(Card hand[], int values[]) {
 	/*NOTE: values must be already sorted array*/
 	// we need number of distinct values in hand and number of distinct suits in hand
@@ -23,10 +25,12 @@ int rank_hand(Card hand[], int values[]) {
 	for (int i = 0; i < HAND_NUM_CARDS-1; i++) {
 		if (suites[i+1] != suites[i]) {distinct_suit++;}
 	}
-/*	display_hand(hand);*/
-/*	printf("Distinct values: %d\n", distinct_vals);*/
-/*	printf("Distinct suites: %d\n", distinct_suit);*/
-	//fflush(stdin);
+	if (DEBUG) {
+		display_hand(hand);
+		printf("Distinct values: %d\n", distinct_vals);
+		printf("Distinct suites: %d\n", distinct_suit);
+	}
+	
 	// check if we have STRAIGHT . .note that ACE can be 1 or 14
 	bool straight, straight_ACE;
 	int tmp_vals[5];
@@ -62,34 +66,34 @@ int rank_hand(Card hand[], int values[]) {
 	if (flush) {
 		if (straight) {
 			// if straight starts with 10 we have ROYALFLUSH
-			if (values[0] == 10) {/*printf("ROYALFLUSH\n");*/return ROYALFLUSH;}
-			else {/*printf("STRAIGHTFLUSH\n");*/return STRAIGHTFLUSH;}
-		} else {/*printf("FLUSH\n");*/return FLUSH;}
+			if (values[0] == 10) {if(DEBUG){printf("ROYALFLUSH\n");}return ROYALFLUSH;}
+			else {if(DEBUG){printf("STRAIGHTFLUSH\n");}return STRAIGHTFLUSH;}
+		} else {if(DEBUG){printf("FLUSH\n");}return FLUSH;}
 	}
 	// we have to check for clear STRAIGHT . .other STRAIGHT variants would already return above
-	if (straight) {/*printf("STRAIGHT\n");*/return STRAIGHT;}
+	if (straight) {if(DEBUG){printf("STRAIGHT\n");}return STRAIGHT;}
 	
 	// we know that's no STRAIGHT or FLUSH, so 5 distinct values is HIGHCARD
-	if (distinct_vals == 5) {/*printf("HIGHCARD\n");*/return HIGHCARD;}
+	if (distinct_vals == 5) {if(DEBUG){printf("HIGHCARD\n");}return HIGHCARD;}
 	// with 4 values we must have a PAIR
-	if (distinct_vals == 4) {/*printf("PAIR\n");*/return PAIR;}
+	if (distinct_vals == 4) {if(DEBUG){printf("PAIR\n");}return PAIR;}
 	// with 3 we could have TRIS or TWO_PAIRS
 	if (distinct_vals == 3) {
 		// if any value repeats 3 times we know it is TRIS .. otherwise it must be TWO_PAIRS
 		// note that for repeat 3 times it is enaugh to do count on first 3 elements !!!
 		for (int i = 0;i < 3; i++) {
-			if (count(values, values[i], 5) == 3) {/*printf("TRIS\n");*/return TRIS;}
+			if (count(values, values[i], 5) == 3) {if(DEBUG){printf("TRIS\n");}return TRIS;}
 		}
-		/*printf("TWO_PAIRS\n")*/;return TWO_PAIRS;
+		if(DEBUG){printf("TWO_PAIRS\n");}return TWO_PAIRS;
 	}
 	// with 2 distinct values we can have POKER or FULLHOUSE
 	if (distinct_vals == 2) {
 		// if any value repeats 4 time we know it is POKER .. otherwise FULLHOUSE
 		// note that for repeat 4 times it is enaugh to do count on first 2 elements !!!
 		for (int i = 0;i < 2; i++) {
-			if (count(values, values[i], 5) == 4) {/*printf("POKER\n");*/return POKER;}
+			if (count(values, values[i], 5) == 4) {if(DEBUG){printf("POKER\n");}return POKER;}
 		}
-		/*printf("FULLHOUSE\n");*/return FULLHOUSE;
+		if(DEBUG){printf("FULLHOUSE\n");}return FULLHOUSE;
 	}
 	// if we did not return until here it is invalid . .return -1
 	printf("<ERROR> Should not have been here . .end rank_hand!\n");
@@ -222,7 +226,7 @@ char resolve_tie(int rank, int pvals[], int bvals[]) {
 		else {return BANK_WIN;}
 	}
 	// STRAIGHT or STRAIGHTFLUSH .. wins higher cards
-	// But ACE can be 1 or 14, so it was oved to helper function
+	// But ACE can be 1 or 14, so it was moved to helper function
 	if (rank == STRAIGHT || rank == STRAIGHTFLUSH) {return straight_tie_resolve(pvals, bvals);}
 	// if its ROYALFLUSH it is TIE (can't resolve ROYALFLUSH)
 	if (rank == ROYALFLUSH) {return TIE;}
@@ -244,83 +248,95 @@ unsigned int get_win(unsigned int bet, int player_rank, int bank_rank, int playe
 		// based on result we now determine the win ammount
 		if (result == PLAYER_WIN) {
 			// return 2xANTE + RAISE (note that RAISE=2*ANTE) multiplied by paytable rank value
-/*			printf("Player win.\n\n");*/
+			if(DEBUG){printf("Player win.\n\n");}
 			unsigned int win = 2 * bet + (2 * bet) * (1 + PAYTABLE[player_rank]);
 			return win;
 		}
 		if (result == TIE) {
 			// in TIE we return all bets, ANTE + RAISE .. so we just return 3*bet
-/*			printf("Tie.\n\n");*/
+			if(DEBUG){printf("Tie.\n\n");}
 			return 3 * bet;
 		}
 		// if we're here it was BANK_WIN, so we return 0
-/*		printf("Bank win.\n\n");*/
+		if(DEBUG){printf("Bank win.\n\n");}
 		return 0;
 	} else {
 		// BANK has NOT qualified..ANTE pays 1:1 and RAISE is returned.. so we return 4*bet
-/*		printf("Bank not qualified.\n\n");*/
+		if(DEBUG){printf("Bank not qualified.\n\n");}
 		return 4 * bet;
 	}
 	printf("<ERROR> Should not have been here .. get_win end!");
 }
 
-bool decide_if_raise(int player_rank, int player_values[], int bank_visible_card) {
+bool decide_if_raise(int player_rank, int player_values[], int bank_visible_card, char strat) {
 	/*
-	Few strategies are implemented already bellow. Just un-comment the desired one.
-	Optimal strategy is still to be done.
+	Few strategies are implemented already bellow. To add custom strategy just add the code under another case statement.
+	Optimal strategy is still to be done. Note that optimal strategy was done to minimize House Edge and not maximize RTP.
+	That has the "strange" effect that the optimal strategy has 0.001% worse expected RTP as Wizards strategy.
 	*/
-	//=================================================================================
-	// BLIND PLAY STRATEGY . .raise in any case
-/*	return true;*/
-
-	//=================================================================================
-	// RAISE ON ACE-KING OR BETTER SRATEGY
-/*	if (player_rank > HIGHCARD) {return true;}*/
-/*	else if (player_values[4] == ACE && player_values[3] == KING) {return true;}*/
-/*	else {return false;}*/
-	
-	// RAISE ON ANY PAIR OR BETTER STRATEGY
-	if (player_rank > HIGHCARD) {return true;}
-	return false;
-	
-	//=================================================================================
-	// WIZARD STRATEGY [see https://wizardofodds.com/games/caribbean-stud-poker/]
-/*	if (player_rank > HIGHCARD) {return true;}*/
-/*	else if (player_values[4] < ACE || player_values[3] < KING) {return false;}*/
-/*	//elif (bank_visible_card in [2,3,4,5,6,7,8,9,10,11,12] and bank_visible_card in player_values): -> return true*/
-/*	else if (bank_visible_card < KING) {*/
-/*		for (int j = 0; j < 5; j++) {*/
-/*			if (bank_visible_card == player_values[j]) {return true;}*/
-/*		}*/
-/*		return false;*/
-/*	}*/
-/*	//elif (bank_visible_card in [13, 14] and (11 in player_values or 12 in player_values)): --> return true*/
-/*	else if (bank_visible_card == KING || bank_visible_card == ACE) {*/
-/*		for (int j = 0; j < 5; j++) {*/
-/*			if (player_values[j] == JACK || player_values[j] == QUEEN) {return true;}*/
-/*		}*/
-/*		return false;*/
-/*	}*/
-/*	//elif (bank_visible_card not in player_values and 12 in player_values and bank_visible_card < player_values[1]): --> return true*/
-/*	else if (bank_visible_card < player_values[1]) {*/
-/*		bool queen_in_player_hand = false;*/
-/*		bool bank_visible_not_in_player_hand = true;*/
-/*		for (int j = 0; j < 5; j++) {*/
-/*			if (player_values[j] == QUEEN) {queen_in_player_hand = true;}*/
-/*			if (bank_visible_card == player_values[j]) {bank_visible_not_in_player_hand = false;}*/
-/*		}*/
-/*		if (bank_visible_not_in_player_hand && queen_in_player_hand) {return true;}*/
-/*		else {return false;}*/
-/*		*/
-/*	}*/
-/*	else {return false;}*/
-
-	//=================================================================================
-	// TODO perfect strategy as presented [https://wizardofodds.com/games/caribbean-stud-poker/optimal-strategy/]
-	
+	switch (strat) {
+		case 1:
+			// BLIND PLAY STRATEGY . .raise in any case
+			// Expected RTP = 94.464%
+			return true;
+			break;
+		case 2:
+			// RAISE ON ACE-KING OR BETTER STRATEGY
+			// Expected RTP = 97.328%
+			if (player_rank > HIGHCARD) {return true;}
+			else if (player_values[4] == ACE && player_values[3] == KING) {return true;}
+			else {return false;}
+			break;
+		case 3:
+			// RAISE ON ANY PAIR OR BETTER STRATEGY
+			// Expected RTP = 97.262%
+			if (player_rank > HIGHCARD) {return true;}
+			return false;
+			break;
+		case 4:
+			// WIZARD STRATEGY [see https://wizardofodds.com/games/caribbean-stud-poker/]
+			// Expected RTP = 97.446%
+			// Always raise with a pair or higher, fold with less than ace/king.
+			if (player_rank > HIGHCARD) {return true;}
+			else if (player_values[4] < ACE || player_values[3] < KING) {return false;}
+			// Raise if the dealer's card is a 2 through queen and matches one of players.
+			else if (bank_visible_card < KING) {
+				for (int j = 0; j < 5; j++) {
+					if (bank_visible_card == player_values[j]) {return true;}
+				}
+				return false;
+			}
+			// Raise if the dealer's card is an ace or king and player has a queen or jack in hand.
+			else if (bank_visible_card == KING || bank_visible_card == ACE) {
+				for (int j = 0; j < 5; j++) {
+					if (player_values[j] == JACK || player_values[j] == QUEEN) {return true;}
+				}
+				return false;
+			}
+			// Raise if the dealer's rank does not match any of players and player has a queen in hand and the dealer's card is less than players fourth highest card.
+			else if (bank_visible_card < player_values[1]) {
+				bool queen_in_player_hand = false;
+				bool bank_visible_not_in_player_hand = true;
+				for (int j = 0; j < 5; j++) {
+					if (player_values[j] == QUEEN) {queen_in_player_hand = true;}
+					if (bank_visible_card == player_values[j]) {bank_visible_not_in_player_hand = false;}
+				}
+				if (bank_visible_not_in_player_hand && queen_in_player_hand) {return true;}
+				else {return false;}
+				
+			}
+			else {return false;}
+			break;
+		// TODO perfect strategy as presented [https://wizardofodds.com/games/caribbean-stud-poker/optimal-strategy/]
+		// Expected RTP = 97.445%
+		
+		default:
+			return true;
+		
+	}
 }
 
-GameResult play(Card deck[], unsigned int bet) {
+GameResult play(Card deck[], unsigned int bet, char strat) {
 	/* deck is shuffled in main() */
 	GameResult _res = {0,0};
 	Card player_hand[5] = {0, 0};
@@ -337,31 +353,24 @@ GameResult play(Card deck[], unsigned int bet) {
 	}
 	// get bank visible card before sorting !!
 	bank_visible_card = bank_values[0];
-/*	printf("PLAYER\n");*/
+
 	sort(player_values, 5);
+	if(DEBUG){printf("PLAYER\n");}
 	player_rank = rank_hand(player_hand, player_values);
-	/*
-	TODO --> Done!
-	Bank hand sort and ranking should be moved to after RAISE. Like this we avoid
-	calling un-needed things in cases where the player folds. It is left here for
-	now for debugging purposes.
-	*/
-/*	printf("\nBANK\n");*/
-/*	sort(bank_values, 5);*/
-/*	bank_rank = rank_hand(bank_hand, bank_values);*/
-/*	printf("\n");*/
+
 	// place ANTE bet
 	_res.game_bet = bet;
 	// implement desired strategy in decide_if_raise() function above
-	if (decide_if_raise(player_rank, player_values, bank_visible_card)) {
+	if (decide_if_raise(player_rank, player_values, bank_visible_card, strat)) {
 		// bank hand sort and rank done here because we do not need them in case player folds
 		sort(bank_values, 5);
+		if(DEBUG){printf("\nBANK\n");}
 		bank_rank = rank_hand(bank_hand, bank_values);
 		// raise .. RAISE = 2 x ANTE
 		_res.game_bet += 2*bet;
 		_res.game_win = get_win(bet, player_rank, bank_rank, player_values, bank_values);
 	}
-/*	printf("Game bet: %d, game win: %d\n", _res.game_bet, _res.game_win);*/
+	if(DEBUG){printf("Game bet: %d, game win: %d\n", _res.game_bet, _res.game_win);}
 	return _res;
 }
 
