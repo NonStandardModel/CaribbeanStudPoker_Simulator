@@ -50,6 +50,7 @@ On ThinkPad T490s laptop I get an average of >1 million games per second.
 This is after the few optimizations that have been made:
 - better checking for straight with ACE as the lowest card
 - made sort5, sort2, count5, count2 functions to be used on arrays of length 5 and 2 (instead of generic sort and count)
+
 Before the above mentioned changes I was getting average ~105s for 100 million simulations using blind strategy, after the changes it has dropped to ~90s. The biggest single contributor to this has been the straight check optimization.
 
 
