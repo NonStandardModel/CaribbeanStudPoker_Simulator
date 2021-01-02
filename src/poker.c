@@ -21,7 +21,7 @@ int rank_hand(Card hand[], int values[]) {
 		suites[i] = hand[i].suite; // suites for cards 1-4 are copied into array here .. the 5th card is done after
 	}
 	suites[4] = hand[4].suite; // the missing 5th card suite from above
-	sort(suites, 5);
+	sort5(suites);
 	for (int i = 0; i < HAND_NUM_CARDS-1; i++) {
 		if (suites[i+1] != suites[i]) {distinct_suit++;}
 	}
@@ -32,8 +32,7 @@ int rank_hand(Card hand[], int values[]) {
 	}
 	
 	// check if we have STRAIGHT . .note that ACE can be 1 or 14
-	bool straight, straight_ACE;
-	int tmp_vals[5];
+	bool straight, straight_ACE = false;
 	if (distinct_vals == 5) {
 		straight = true;
 		int tmp = values[0];
@@ -41,18 +40,20 @@ int rank_hand(Card hand[], int values[]) {
 			tmp++;
 			if (values[i] != tmp) {straight = false;break;}
 		}
-		for (int i = 0; i < 5; i++) {
-			if (values[i] != ACE) {
-				tmp_vals[i] = values[i];
-			} else {tmp_vals[i] = 1;}
+		// now check if we have straight with ACE acting as lowest card
+		// to have ACE-Straight we must have ACE as highest and 2 as lowest
+		if (values[4] == ACE) {
+			if (values[0] == 2) {
+				straight_ACE = true;
+				tmp = 2;
+				// for loop only to 4th card, we know 5th is ACE
+				for (int i = 1; i < 4; i++) {
+					tmp++;
+					if (values[i] != tmp) {straight_ACE = false;break;}
+				}
+			}
 		}
-		sort(tmp_vals, 5);
-		straight_ACE = true;
-		tmp = tmp_vals[0];
-		for (int i = 1; i < 5; i++) {
-			tmp++;
-			if (tmp_vals[i] != tmp) {straight_ACE = false;break;}
-		}
+		//
 		if (straight || straight_ACE) {straight = true;}
 	} else {straight = false;}
 	
@@ -82,7 +83,7 @@ int rank_hand(Card hand[], int values[]) {
 		// if any value repeats 3 times we know it is TRIS .. otherwise it must be TWO_PAIRS
 		// note that for repeat 3 times it is enaugh to do count on first 3 elements !!!
 		for (int i = 0;i < 3; i++) {
-			if (count(values, values[i], 5) == 3) {if(DEBUG){printf("TRIS\n");}return TRIS;}
+			if (count5(values, values[i]) == 3) {if(DEBUG){printf("TRIS\n");}return TRIS;}
 		}
 		if(DEBUG){printf("TWO_PAIRS\n");}return TWO_PAIRS;
 	}
@@ -91,7 +92,7 @@ int rank_hand(Card hand[], int values[]) {
 		// if any value repeats 4 time we know it is POKER .. otherwise FULLHOUSE
 		// note that for repeat 4 times it is enaugh to do count on first 2 elements !!!
 		for (int i = 0;i < 2; i++) {
-			if (count(values, values[i], 5) == 4) {if(DEBUG){printf("POKER\n");}return POKER;}
+			if (count5(values, values[i]) == 4) {if(DEBUG){printf("POKER\n");}return POKER;}
 		}
 		if(DEBUG){printf("FULLHOUSE\n");}return FULLHOUSE;
 	}
@@ -120,8 +121,8 @@ char resolve_helper(int p, int b) {
 char straight_tie_resolve(int pvals[], int bvals[]) {
 	// moved to separate function the TIE resolve case when both have STRAIGHT/STRAIGHTFLUSH
 	// note that we must not check only lowest or highest value due to ACE possibility to be 14 or 1
-	bool player_ACE_straight = (count(pvals, 2, 5) == 1 && count(pvals, ACE, 5) == 1);
-	bool bank_ACE_straight = (count(bvals, 2, 5) == 1 && count(bvals, ACE, 5) == 1);
+	bool player_ACE_straight = (count5(pvals, 2) == 1 && count5(pvals, ACE) == 1);
+	bool bank_ACE_straight = (count5(bvals, 2) == 1 && count5(bvals, ACE) == 1);
 	// if both have "dirty" straight it must be TIE
 	if (player_ACE_straight && bank_ACE_straight) {return TIE;}
 	// player has dirty straight, bank has clear .. BANK_WIN
@@ -145,8 +146,8 @@ char resolve_tie(int rank, int pvals[], int bvals[]) {
 		// find pair value and store single cards in another array
 		int ppair, bpair, psingles[3], bsingles[3], pidx = 0, bidx = 0;
 		for (int i = 0; i < 5; i++) {
-			if (count(pvals, pvals[i], 5) == 2) {ppair = pvals[i];}
-			if (count(bvals, bvals[i], 5) == 2) {bpair = bvals[i];}
+			if (count5(pvals, pvals[i]) == 2) {ppair = pvals[i];}
+			if (count5(bvals, bvals[i]) == 2) {bpair = bvals[i];}
 		}
 		for (int i = 0; i < 5; i++) {
 			if (pvals[i] != ppair) {psingles[pidx] = pvals[i];pidx++;}
@@ -167,21 +168,21 @@ char resolve_tie(int rank, int pvals[], int bvals[]) {
 		int ppairs[2] = {0, 0}, bpairs[2] = {0, 0};
 		int psingle_card, bsingle_card;
 		for (int i = 0; i < 5; i++) {
-			if (count(pvals, pvals[i], 5) == 2) {
-				if (count(ppairs, pvals[i], 2) == 0) {
+			if (count5(pvals, pvals[i]) == 2) {
+				if (count2(ppairs, pvals[i]) == 0) {
 					if (ppairs[0] == 0) {ppairs[0] = pvals[i];}
 					else {ppairs[1] = pvals[i];}
 				} else {psingle_card = pvals[i];}
 			}
-			if (count(bvals, bvals[i], 5) == 2) {
-				if (count(bpairs, bvals[i], 2) == 0) {
+			if (count5(bvals, bvals[i]) == 2) {
+				if (count2(bpairs, bvals[i]) == 0) {
 					if (bpairs[0] == 0) {bpairs[0] = bvals[i];}
 					else {bpairs[1] = bvals[i];}
 				} else {bsingle_card = bvals[i];}
 			}
 		}
-		sort(ppairs, 2);
-		sort(bpairs, 2);
+		sort2(ppairs);
+		sort2(bpairs);
 		// first copare pairs and than single if needed .. note that higher pair is idx 1 so we start with 1
 		for (int i = 0; i < 2; i++) {
 			char result = resolve_helper(ppairs[1-i], bpairs[1-i]);
@@ -207,8 +208,8 @@ char resolve_tie(int rank, int pvals[], int bvals[]) {
 		int ptris, btris;
 		for (int i = 0; i < 3; i++) {
 			// we just do 3 checks for both in the same loop, in average it is ~same as 2 loops with break
-			if (count(pvals, pvals[i], HAND_NUM_CARDS) == 3) {ptris = pvals[i];}
-			if (count(bvals, bvals[i], HAND_NUM_CARDS) == 3) {btris = bvals[i];}
+			if (count5(pvals, pvals[i]) == 3) {ptris = pvals[i];}
+			if (count5(bvals, bvals[i]) == 3) {btris = bvals[i];}
 		}
 		if (ptris > btris) {return PLAYER_WIN;}
 		else {return BANK_WIN;}
@@ -218,9 +219,9 @@ char resolve_tie(int rank, int pvals[], int bvals[]) {
 		// we need to find poker value, so search which cards repeats 4x in hand
 		// check if 1st card, if not than it must be 2nd (since poker is 4 repeated cards and hand has 5 cards)
 		int ppoker, bpoker;
-		if (count(pvals, pvals[0], HAND_NUM_CARDS) == 4) {ppoker = pvals[0];}
+		if (count5(pvals, pvals[0]) == 4) {ppoker = pvals[0];}
 		else {ppoker = pvals[1];}
-		if (count(bvals, bvals[0], HAND_NUM_CARDS) == 4) {bpoker = bvals[0];}
+		if (count5(bvals, bvals[0]) == 4) {bpoker = bvals[0];}
 		else {bpoker = bvals[1];}
 		if (ppoker > bpoker) {return PLAYER_WIN;}
 		else {return BANK_WIN;}
@@ -294,6 +295,13 @@ bool decide_if_raise(int player_rank, int player_values[], int bank_visible_card
 			return false;
 			break;
 		case 4:
+			// RAISE ON A-K-J-8-3 OR HIGHER
+			// Expected RTP = 97.404%
+			if (player_rank > HIGHCARD) {return true;}
+			else if (player_values[4] == ACE && player_values[3] == KING && player_values[2] >= JACK && player_values[1] >= 8 && player_values[0] >= 3) {return true;}
+			else {return false;}
+			break;
+		case 5:
 			// WIZARD STRATEGY [see https://wizardofodds.com/games/caribbean-stud-poker/]
 			// Expected RTP = 97.446%
 			// Always raise with a pair or higher, fold with less than ace/king.
@@ -354,7 +362,7 @@ GameResult play(Card deck[], unsigned int bet, char strat) {
 	// get bank visible card before sorting !!
 	bank_visible_card = bank_values[0];
 
-	sort(player_values, 5);
+	sort5(player_values);
 	if(DEBUG){printf("PLAYER\n");}
 	player_rank = rank_hand(player_hand, player_values);
 
@@ -363,7 +371,7 @@ GameResult play(Card deck[], unsigned int bet, char strat) {
 	// implement desired strategy in decide_if_raise() function above
 	if (decide_if_raise(player_rank, player_values, bank_visible_card, strat)) {
 		// bank hand sort and rank done here because we do not need them in case player folds
-		sort(bank_values, 5);
+		sort5(bank_values);
 		if(DEBUG){printf("\nBANK\n");}
 		bank_rank = rank_hand(bank_hand, bank_values);
 		// raise .. RAISE = 2 x ANTE

@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
 	printf("\t1 - Blind play strategy (raise in any case). Expected RTP = 94.464%%\n");
 	printf("\t2 - Raise on ACE-KING or better strategy. Expected RTP = 97.328%%\n");
 	printf("\t3 - Raise on any PAIR or better strategy. Expected RTP = 97.262%%\n");
-	printf("\t4 - Wizards strategy [see https://wizardofodds.com/games/caribbean-stud-poker/]. Expected RTP = 97.446%%\n");
+	printf("\t4 - Raise on A-K-J-8-3 or better strategy. Expected RTP = 97.404%%\n");
+	printf("\t5 - Wizards strategy [see https://wizardofodds.com/games/caribbean-stud-poker/]. Expected RTP = 97.446%%\n");
 	fgets(strat, sizeof(strat), stdin);
 	
 	unsigned int SIMS = atoi(argv[1]);

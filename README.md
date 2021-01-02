@@ -5,7 +5,7 @@ Note that this may be still work in progress (or maybe I already lost interest).
 
 **TODO:** 
 1) There is a lot of room for improvement in terms of speed (note that to get somewhat stable RTP we may need 100s of millions of simulations). First is the sort() algorithm. I believe that we only need to sort arrays of length 5 and 2 for now, so custom implementation would benefit a lot. Then the count() number of occurrences of some value in array. Same reasoning as before. If we always count on the same array length we could be faster with custom implementation. Next is deck shuffling for each game. We only need 10 random unique cards for each game. Maybe 10 random unique could be faster than shuffling the entire 52 card deck.
-2) Add strategy selection as parameter at start. Few strategies are already in decide_if_raise() function, but you have to un-comment the desired one and re-compile for now. And the optimal strategy is not implemented yet.
+EDIT: some of the above has been done, see **Speed Notes** at the end
 
 ### Why & How
 As part of my work I have to independently check various things. Recently I had to check the RTP for this poker variant. The odds for this game can be found on various web-sites. I was using WizardOfOdds (WoO from now on) as reference as it seems to be reasonably "*trusted*" in this industry [https://wizardofodds.com/games/caribbean-stud-poker/]. The 1st simulator was done (due to complicated reasons) mainly in my free time, than this "*port to C*" was done fully in my time, so I decided to share the code. Maybe someone will have to do something similar in the future.
@@ -45,7 +45,11 @@ I have not tested this on Windows OS, but it should not be a problem to compile,
 Run the compiled binary with number of simulations as 1st argument. For example to run 10 million simulations:
 `./StudPokerSim 10000000`
 
-
-
+### Speed Notes
+On ThinkPad T490s laptop I get an average of >1 million games per second.
+This is after the few optimizations that have been made:
+- better checking for straight with ACE as the lowest card
+- made sort5, sort2, count5, count2 functions to be used on arrays of length 5 and 2 (instead of generic sort and count)
+Before the above mentioned changes I was getting average ~105s for 100 million simulations using blind strategy, after the changes it has dropped to ~90s. The biggest single contributor to this has been the straight check optimization.
 
 
