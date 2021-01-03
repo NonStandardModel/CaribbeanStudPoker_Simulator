@@ -5,6 +5,7 @@ Note that this may be still work in progress (or maybe I already lost interest).
 
 **TODO:** 
 1) There is a lot of room for improvement in terms of speed (note that to get somewhat stable RTP we may need 100s of millions of simulations). First is the sort() algorithm. I believe that we only need to sort arrays of length 5 and 2 for now, so custom implementation would benefit a lot. Then the count() number of occurrences of some value in array. Same reasoning as before. If we always count on the same array length we could be faster with custom implementation. Next is deck shuffling for each game. We only need 10 random unique cards for each game. Maybe 10 random unique could be faster than shuffling the entire 52 card deck.
+
 EDIT: some of the above has been done, see **Speed Notes** at the end
 
 ### Why & How
@@ -52,5 +53,7 @@ This is after the few optimizations that have been made:
 - made sort5, sort2, count5, count2 functions to be used on arrays of length 5 and 2 (instead of generic sort and count)
 
 Before the above mentioned changes I was getting average ~105s for 100 million simulations using blind strategy, after the changes it has dropped to ~90s. The biggest single contributor to this has been the straight check optimization.
+
+Note that compilation is done without any compiler optimization (-O) so there may be more "easy" speed to be found if needed.
 
 
